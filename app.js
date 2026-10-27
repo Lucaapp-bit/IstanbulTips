@@ -19,8 +19,7 @@
       shortLink: 'Link abbreviato: apri il link nel browser e copia l’URL completo, oppure clicca sulla mappa.',
       pickedOnMap: 'Coordinate prese dalla mappa.', localOnly: 'Salvataggio sul server non disponibile: salvato solo in questo browser.',
       saveFail: 'Errore di salvataggio.',
-      mapKeyMissing: 'Mappa non configurata: manca la chiave Google Maps.',
-      mapKeyError: 'Impossibile caricare Google Maps. Controlla la chiave API.'
+      mapError: 'Impossibile caricare la mappa.'
     },
     en: {
       admin: 'Admin', whereAreYou: 'Where are you?', searchPlaceholder: 'E.g. Taksim Square, Galata, Kadıköy…',
@@ -38,8 +37,7 @@
       shortLink: 'Shortened link: open it in the browser and copy the full URL, or click the map.',
       pickedOnMap: 'Coordinates taken from the map.', localOnly: 'Server saving unavailable: saved in this browser only.',
       saveFail: 'Save error.',
-      mapKeyMissing: 'Map not configured: Google Maps key is missing.',
-      mapKeyError: 'Could not load Google Maps. Check the API key.'
+      mapError: 'Could not load the map.'
     }
   };
   const CATS = { eat: '🍽️', see: '🏛️', drink: '☕', other: '⭐' };
@@ -64,64 +62,38 @@
   let adminPw = null;
   const markers = new Map();
 
-  /* ---------- map (Google Maps) ---------- */
-  let map, infoWindow, geocoder, AdvancedMarker, LatLngBounds;
-  let mapMsgShown = false;
+  /* ---------- map (MapLibre + OpenFreeMap, no API key) ---------- */
+  const STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+  let map;
 
-  function showMapError(text) {
-    mapMsgShown = true;
-    $('map').innerHTML = `<div class="map-error">${esc(text)}</div>`;
-  }
-
-  function loadGoogle(key) {
-    return new Promise((resolve, reject) => {
-      window.__gmReady = resolve;
-      window.gm_authFailure = () => showMapError(t('mapKeyError'));
-      const s = document.createElement('script');
-      s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) +
-        '&v=weekly&loading=async&language=' + lang + '&callback=__gmReady';
-      s.onerror = reject;
-      document.head.appendChild(s);
-    });
-  }
-
-  async function initMap() {
-    let key = '';
-    try { key = (await (await fetch('/api/config', { cache: 'no-store' })).json()).googleMapsKey || ''; } catch { /* ignore */ }
-    if (!key) { showMapError(t('mapKeyMissing')); return false; }
-    try { await loadGoogle(key); } catch { showMapError(t('mapKeyError')); return false; }
-    const { Map, InfoWindow } = await google.maps.importLibrary('maps');
-    ({ AdvancedMarkerElement: AdvancedMarker } = await google.maps.importLibrary('marker'));
-    ({ LatLngBounds } = await google.maps.importLibrary('core'));
-    const { Geocoder } = await google.maps.importLibrary('geocoding');
-    map = new Map($('map'), {
-      center: { lat: CENTER[0], lng: CENTER[1] }, zoom: 12, mapId: 'DEMO_MAP_ID',
-      mapTypeControl: false, streetViewControl: false, fullscreenControl: true, clickableIcons: false
-    });
-    infoWindow = new InfoWindow();
-    geocoder = new Geocoder();
-    map.addListener('click', (e) => {
+  function initMap() {
+    if (typeof maplibregl === 'undefined') {
+      $('map').innerHTML = `<div class="map-error">${esc(t('mapError'))}</div>`;
+      return;
+    }
+    map = new maplibregl.Map({ container: 'map', style: STYLE_URL, center: [CENTER[1], CENTER[0]], zoom: 11.5, attributionControl: { compact: true } });
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+    map.on('click', (e) => {
       if (!adminDlg.open) return;
-      $('fLat').value = e.latLng.lat().toFixed(6);
-      $('fLng').value = e.latLng.lng().toFixed(6);
+      $('fLat').value = e.lngLat.lat.toFixed(6);
+      $('fLng').value = e.lngLat.lng.toFixed(6);
       $('adminMsg').textContent = t('pickedOnMap');
     });
-    return true;
   }
 
   function pinEl(emoji, me) {
+    const wrap = document.createElement('div'); // MapLibre positions this element itself
     const d = document.createElement('div');
     d.className = 'pin' + (me ? ' me' : '');
     const s = document.createElement('span');
     s.textContent = emoji;
     d.appendChild(s);
-    return d;
+    wrap.appendChild(d);
+    return wrap;
   }
 
-  function openInfo(p, m) {
-    if (!infoWindow) return;
-    infoWindow.setContent(`<div class="info"><strong>${esc(p.name)}</strong><br>${esc(descOf(p))}<br><a href="${esc(mapsUrl(p))}" target="_blank" rel="noopener">${esc(t('openMaps'))}</a></div>`);
-    infoWindow.open({ map, anchor: m });
+  function popupHtml(p) {
+    return `<div class="info"><strong>${esc(p.name)}</strong><br>${esc(descOf(p))}<br><a href="${esc(mapsUrl(p))}" target="_blank" rel="noopener">${esc(t('openMaps'))}</a></div>`;
   }
 
   /* ---------- helpers ---------- */
@@ -169,15 +141,14 @@
 
   function render() {
     const { list, note } = visiblePlaces();
-    markers.forEach((m) => { m.map = null; });
+    markers.forEach((m) => m.remove());
     markers.clear();
     if (map) {
       list.forEach((p) => {
-        const m = new AdvancedMarker({
-          map, position: { lat: p.lat, lng: p.lng }, title: p.name, content: pinEl(CATS[p.category] || CATS.other)
-        });
-        m.addListener('click', () => openInfo(p, m));
-        m._place = p;
+        const m = new maplibregl.Marker({ element: pinEl(CATS[p.category] || CATS.other), anchor: 'bottom' })
+          .setLngLat([p.lng, p.lat])
+          .setPopup(new maplibregl.Popup({ offset: 32, closeButton: false }).setHTML(popupHtml(p)))
+          .addTo(map);
         markers.set(p.id, m);
       });
     }
@@ -195,38 +166,33 @@
   function fitView() {
     if (!map) return;
     const { list } = visiblePlaces();
-    const pts = list.map((p) => [p.lat, p.lng]);
-    if (userPos) pts.push(userPos);
+    const pts = list.map((p) => [p.lng, p.lat]);
+    if (userPos) pts.push([userPos[1], userPos[0]]);
     if (pts.length > 1) {
-      const b = new LatLngBounds();
-      pts.forEach((q) => b.extend({ lat: q[0], lng: q[1] }));
-      map.fitBounds(b, 60);
-      google.maps.event.addListenerOnce(map, 'idle', () => { if (map.getZoom() > 16) map.setZoom(16); });
-    } else if (pts.length === 1) { map.setCenter({ lat: pts[0][0], lng: pts[0][1] }); map.setZoom(15); }
+      const b = new maplibregl.LngLatBounds(pts[0], pts[0]);
+      pts.forEach((q) => b.extend(q));
+      map.fitBounds(b, { padding: 70, maxZoom: 16, duration: 600 });
+    } else if (pts.length === 1) map.flyTo({ center: pts[0], zoom: 15 });
   }
 
-  function clearUser() { if (userMarker) { userMarker.map = null; userMarker = null; } }
+  function clearUser() { if (userMarker) { userMarker.remove(); userMarker = null; } }
 
-  function setUser(pos, label) {
+  function setUser(pos) {
     userPos = pos;
     clearUser();
-    if (map) {
-      userMarker = new AdvancedMarker({ map, position: { lat: pos[0], lng: pos[1] }, title: label || t('youAreHere'), content: pinEl('📍', true) });
-    }
+    if (map) userMarker = new maplibregl.Marker({ element: pinEl('📍', true), anchor: 'bottom' }).setLngLat([pos[1], pos[0]]).addTo(map);
     render();
     fitView();
   }
 
   /* ---------- search ---------- */
   async function geocode(q) {
-    if (!geocoder) return null;
-    const bounds = { south: 40.8, west: 28.4, north: 41.35, east: 29.6 };
-    try {
-      const { results } = await geocoder.geocode({ address: q + ', Istanbul', bounds, region: 'TR' });
-      if (!results[0]) return null;
-      const loc = results[0].geometry.location;
-      return { pos: [loc.lat(), loc.lng()], label: results[0].formatted_address };
-    } catch { return null; }
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=' + lang +
+      '&viewbox=28.4,41.35,29.6,40.8&q=' + encodeURIComponent(q + ', Istanbul');
+    const r = await fetch(url, { headers: { Accept: 'application/json' } });
+    if (!r.ok) throw new Error('geocode');
+    const data = await r.json();
+    return data[0] ? { pos: [parseFloat(data[0].lat), parseFloat(data[0].lon)] } : null;
   }
 
   $('searchForm').addEventListener('submit', async (e) => {
@@ -238,7 +204,7 @@
       const res = await geocode(q);
       if (!res) { $('searchMsg').textContent = t('notFound'); return; }
       $('searchMsg').textContent = '';
-      setUser(res.pos, q);
+      setUser(res.pos);
     } catch { $('searchMsg').textContent = t('notFound'); }
   });
 
@@ -270,9 +236,8 @@
     if (!c) return;
     const m = markers.get(c.dataset.id);
     if (m && map) {
-      map.panTo(m.position);
-      if (map.getZoom() < 16) map.setZoom(16);
-      openInfo(m._place, m);
+      map.flyTo({ center: m.getLngLat(), zoom: Math.max(map.getZoom(), 16) });
+      if (!m.getPopup().isOpen()) m.togglePopup();
     }
   });
 
@@ -392,13 +357,13 @@
     $('adminMsg').textContent = res.local ? t('localOnly') : t('added');
     $('placeForm').reset();
     renderAdminList(); render();
-    if (map) { map.setCenter({ lat: p.lat, lng: p.lng }); map.setZoom(16); }
+    if (map) map.flyTo({ center: [p.lng, p.lat], zoom: 16 });
   });
 
   /* ---------- init ---------- */
   (async () => {
     await loadPlaces();
-    await initMap();
+    initMap();
     applyI18n();
     fitView();
   })();

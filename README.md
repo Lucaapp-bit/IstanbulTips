@@ -3,13 +3,10 @@
 Mappa di Istanbul con i miei consigli (ristoranti, cose da vedere…). Sito in **italiano e inglese**, con barra di ricerca "Dove sei?" che mostra i consigli più vicini, e un'**area admin** per aggiungere posti da interfaccia.
 
 ## Funzioni
-- Mappa **Google Maps** (serve una chiave API, vedi sotto)
-- Ricerca posizione (Google Geocoding) o geolocalizzazione → consigli entro un raggio regolabile, ordinati per distanza
+- Mappa vettoriale MapLibre + OpenFreeMap (gratuita, nessuna API key né carta)
+- Ricerca posizione (Nominatim/OpenStreetMap) o geolocalizzazione → consigli entro un raggio regolabile, ordinati per distanza
 - Filtri per categoria, switch IT/EN
 - Admin: pulsante **Admin** in alto → password → aggiungi posto (incolla un link Google Maps per compilare nome e coordinate, oppure clicca sulla mappa), elimina posti
-
-## Chiave Google Maps
-Nella Google Cloud Console abilita **Maps JavaScript API** e **Geocoding API**, crea una chiave API e limitala ai tuoi domini (HTTP referrer). Su Vercel imposta la variabile `GOOGLE_MAPS_API_KEY` e rifai il deploy.
 
 ## Deploy (Vercel)
 1. Importa il repo su Vercel.
