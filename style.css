@@ -110,3 +110,7 @@ body.admin-open #map { cursor: crosshair; }
   .panel { border-right: 0; border-top: 1px solid var(--border); }
   .grid2 { grid-template-columns: 1fr; }
 }
+
+.map-error { height: 100%; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); background: #efe9df; }
+.info { color: #1f2933; font-size: .92rem; max-width: 220px; }
+.info a { color: var(--accent); font-weight: 600; }

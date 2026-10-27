@@ -18,7 +18,9 @@
       added: 'Posto aggiunto!', deleted: 'Posto eliminato.', parsed: 'Dati letti dal link.',
       shortLink: 'Link abbreviato: apri il link nel browser e copia l’URL completo, oppure clicca sulla mappa.',
       pickedOnMap: 'Coordinate prese dalla mappa.', localOnly: 'Salvataggio sul server non disponibile: salvato solo in questo browser.',
-      saveFail: 'Errore di salvataggio.'
+      saveFail: 'Errore di salvataggio.',
+      mapKeyMissing: 'Mappa non configurata: manca la chiave Google Maps.',
+      mapKeyError: 'Impossibile caricare Google Maps. Controlla la chiave API.'
     },
     en: {
       admin: 'Admin', whereAreYou: 'Where are you?', searchPlaceholder: 'E.g. Taksim Square, Galata, Kadıköy…',
@@ -35,7 +37,9 @@
       added: 'Place added!', deleted: 'Place deleted.', parsed: 'Data read from the link.',
       shortLink: 'Shortened link: open it in the browser and copy the full URL, or click the map.',
       pickedOnMap: 'Coordinates taken from the map.', localOnly: 'Server saving unavailable: saved in this browser only.',
-      saveFail: 'Save error.'
+      saveFail: 'Save error.',
+      mapKeyMissing: 'Map not configured: Google Maps key is missing.',
+      mapKeyError: 'Could not load Google Maps. Check the API key.'
     }
   };
   const CATS = { eat: '🍽️', see: '🏛️', drink: '☕', other: '⭐' };
@@ -60,18 +64,64 @@
   let adminPw = null;
   const markers = new Map();
 
-  /* ---------- map ---------- */
-  const map = L.map('map').setView(CENTER, 12);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map);
-  const markerLayer = L.layerGroup().addTo(map);
+  /* ---------- map (Google Maps) ---------- */
+  let map, infoWindow, geocoder, AdvancedMarker, LatLngBounds;
+  let mapMsgShown = false;
 
-  function pinIcon(emoji, me) {
-    return L.divIcon({
-      className: '', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -30],
-      html: `<div class="pin${me ? ' me' : ''}"><span>${emoji}</span></div>`
+  function showMapError(text) {
+    mapMsgShown = true;
+    $('map').innerHTML = `<div class="map-error">${esc(text)}</div>`;
+  }
+
+  function loadGoogle(key) {
+    return new Promise((resolve, reject) => {
+      window.__gmReady = resolve;
+      window.gm_authFailure = () => showMapError(t('mapKeyError'));
+      const s = document.createElement('script');
+      s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) +
+        '&v=weekly&loading=async&language=' + lang + '&callback=__gmReady';
+      s.onerror = reject;
+      document.head.appendChild(s);
     });
+  }
+
+  async function initMap() {
+    let key = '';
+    try { key = (await (await fetch('/api/config', { cache: 'no-store' })).json()).googleMapsKey || ''; } catch { /* ignore */ }
+    if (!key) { showMapError(t('mapKeyMissing')); return false; }
+    try { await loadGoogle(key); } catch { showMapError(t('mapKeyError')); return false; }
+    const { Map, InfoWindow } = await google.maps.importLibrary('maps');
+    ({ AdvancedMarkerElement: AdvancedMarker } = await google.maps.importLibrary('marker'));
+    ({ LatLngBounds } = await google.maps.importLibrary('core'));
+    const { Geocoder } = await google.maps.importLibrary('geocoding');
+    map = new Map($('map'), {
+      center: { lat: CENTER[0], lng: CENTER[1] }, zoom: 12, mapId: 'DEMO_MAP_ID',
+      mapTypeControl: false, streetViewControl: false, fullscreenControl: true, clickableIcons: false
+    });
+    infoWindow = new InfoWindow();
+    geocoder = new Geocoder();
+    map.addListener('click', (e) => {
+      if (!adminDlg.open) return;
+      $('fLat').value = e.latLng.lat().toFixed(6);
+      $('fLng').value = e.latLng.lng().toFixed(6);
+      $('adminMsg').textContent = t('pickedOnMap');
+    });
+    return true;
+  }
+
+  function pinEl(emoji, me) {
+    const d = document.createElement('div');
+    d.className = 'pin' + (me ? ' me' : '');
+    const s = document.createElement('span');
+    s.textContent = emoji;
+    d.appendChild(s);
+    return d;
+  }
+
+  function openInfo(p, m) {
+    if (!infoWindow) return;
+    infoWindow.setContent(`<div class="info"><strong>${esc(p.name)}</strong><br>${esc(descOf(p))}<br><a href="${esc(mapsUrl(p))}" target="_blank" rel="noopener">${esc(t('openMaps'))}</a></div>`);
+    infoWindow.open({ map, anchor: m });
   }
 
   /* ---------- helpers ---------- */
@@ -119,13 +169,18 @@
 
   function render() {
     const { list, note } = visiblePlaces();
-    markerLayer.clearLayers();
+    markers.forEach((m) => { m.map = null; });
     markers.clear();
-    list.forEach((p) => {
-      const m = L.marker([p.lat, p.lng], { icon: pinIcon(CATS[p.category] || CATS.other) }).addTo(markerLayer);
-      m.bindPopup(`<strong>${esc(p.name)}</strong><br>${esc(descOf(p))}<br><a href="${esc(mapsUrl(p))}" target="_blank" rel="noopener">${esc(t('openMaps'))}</a>`);
-      markers.set(p.id, m);
-    });
+    if (map) {
+      list.forEach((p) => {
+        const m = new AdvancedMarker({
+          map, position: { lat: p.lat, lng: p.lng }, title: p.name, content: pinEl(CATS[p.category] || CATS.other)
+        });
+        m.addListener('click', () => openInfo(p, m));
+        m._place = p;
+        markers.set(p.id, m);
+      });
+    }
     $('results').innerHTML = `<p class="empty"><strong>${esc(note)}</strong></p>` + list.map((p) => `
       <div class="card" data-id="${esc(p.id)}">
         <h3>${CATS[p.category] || CATS.other} ${esc(p.name)}</h3>
@@ -138,35 +193,46 @@
   }
 
   function fitView() {
+    if (!map) return;
     const { list } = visiblePlaces();
     const pts = list.map((p) => [p.lat, p.lng]);
     if (userPos) pts.push(userPos);
-    if (pts.length > 1) map.fitBounds(L.latLngBounds(pts).pad(0.25), { maxZoom: 16 });
-    else if (pts.length === 1) map.setView(pts[0], 15);
+    if (pts.length > 1) {
+      const b = new LatLngBounds();
+      pts.forEach((q) => b.extend({ lat: q[0], lng: q[1] }));
+      map.fitBounds(b, 60);
+      google.maps.event.addListenerOnce(map, 'idle', () => { if (map.getZoom() > 16) map.setZoom(16); });
+    } else if (pts.length === 1) { map.setCenter({ lat: pts[0][0], lng: pts[0][1] }); map.setZoom(15); }
   }
+
+  function clearUser() { if (userMarker) { userMarker.map = null; userMarker = null; } }
 
   function setUser(pos, label) {
     userPos = pos;
-    if (userMarker) userMarker.remove();
-    userMarker = L.marker(pos, { icon: pinIcon('📍', true) }).addTo(map).bindPopup(esc(label || t('youAreHere')));
+    clearUser();
+    if (map) {
+      userMarker = new AdvancedMarker({ map, position: { lat: pos[0], lng: pos[1] }, title: label || t('youAreHere'), content: pinEl('📍', true) });
+    }
     render();
     fitView();
   }
 
   /* ---------- search ---------- */
   async function geocode(q) {
-    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=' + lang +
-      '&viewbox=28.4,41.35,29.6,40.8&q=' + encodeURIComponent(q + ', Istanbul');
-    const r = await fetch(url, { headers: { Accept: 'application/json' } });
-    if (!r.ok) throw new Error('geocode');
-    const data = await r.json();
-    return data[0] ? { pos: [parseFloat(data[0].lat), parseFloat(data[0].lon)], label: data[0].display_name } : null;
+    if (!geocoder) return null;
+    const bounds = { south: 40.8, west: 28.4, north: 41.35, east: 29.6 };
+    try {
+      const { results } = await geocoder.geocode({ address: q + ', Istanbul', bounds, region: 'TR' });
+      if (!results[0]) return null;
+      const loc = results[0].geometry.location;
+      return { pos: [loc.lat(), loc.lng()], label: results[0].formatted_address };
+    } catch { return null; }
   }
 
   $('searchForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const q = $('searchInput').value.trim();
-    if (!q) { userPos = null; if (userMarker) userMarker.remove(); render(); $('searchMsg').textContent = ''; return; }
+    if (!q) { userPos = null; clearUser(); render(); $('searchMsg').textContent = ''; return; }
     $('searchMsg').textContent = t('searching');
     try {
       const res = await geocode(q);
@@ -203,7 +269,11 @@
     const c = e.target.closest('.card');
     if (!c) return;
     const m = markers.get(c.dataset.id);
-    if (m) { map.setView(m.getLatLng(), Math.max(map.getZoom(), 16)); m.openPopup(); }
+    if (m && map) {
+      map.panTo(m.position);
+      if (map.getZoom() < 16) map.setZoom(16);
+      openInfo(m._place, m);
+    }
   });
 
   document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => {
@@ -305,13 +375,6 @@
     $('adminMsg').textContent = t('parsed');
   });
 
-  map.on('click', (e) => {
-    if (!adminDlg.open) return;
-    $('fLat').value = e.latlng.lat.toFixed(6);
-    $('fLng').value = e.latlng.lng.toFixed(6);
-    $('adminMsg').textContent = t('pickedOnMap');
-  });
-
   $('placeForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const p = {
@@ -329,12 +392,13 @@
     $('adminMsg').textContent = res.local ? t('localOnly') : t('added');
     $('placeForm').reset();
     renderAdminList(); render();
-    map.setView([p.lat, p.lng], 16);
+    if (map) { map.setCenter({ lat: p.lat, lng: p.lng }); map.setZoom(16); }
   });
 
   /* ---------- init ---------- */
   (async () => {
     await loadPlaces();
+    await initMap();
     applyI18n();
     fitView();
   })();
