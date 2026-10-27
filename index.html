@@ -2,46 +2,57 @@
 <html lang="it">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0B2239">
   <title>Istanbul Tips</title>
   <meta name="description" content="I miei consigli per Istanbul — My Istanbul recommendations">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="topbar">
-    <h1>Istanbul Tips</h1>
-    <div class="topbar-actions">
-      <div class="lang" role="group" aria-label="Language">
-        <button type="button" data-lang="it">IT</button>
-        <button type="button" data-lang="en">EN</button>
+  <div id="map" aria-label="Map"></div>
+
+  <aside class="panel" id="panel" data-state="half">
+    <button type="button" class="grab" id="grab" data-i18n-aria="togglePanel" aria-label="Pannello"><span></span></button>
+
+    <header class="brand">
+      <span class="logo" data-icon="moon" data-size="20"></span>
+      <h1>Istanbul Tips</h1>
+      <div class="brand-actions">
+        <div class="lang" role="group" aria-label="Language">
+          <button type="button" data-lang="it">IT</button>
+          <button type="button" data-lang="en">EN</button>
+        </div>
+        <button type="button" id="adminBtn" class="icon-btn" data-i18n-aria="admin" aria-label="Admin"><span data-icon="lock" data-size="18"></span></button>
       </div>
-      <button type="button" id="adminBtn" class="ghost" data-i18n="admin">Admin</button>
+    </header>
+
+    <form id="searchForm" class="search" autocomplete="off">
+      <label for="searchInput" class="sr-only" data-i18n="whereAreYou">Dove sei?</label>
+      <div class="search-box">
+        <span class="search-ic" data-icon="search" data-size="20"></span>
+        <input id="searchInput" type="search" enterkeyhint="search" data-i18n-placeholder="searchPlaceholder" placeholder="Dove sei? Es. Taksim">
+        <button type="button" id="geoBtn" class="icon-btn flat" data-i18n-aria="useMyLocation" aria-label="Usa la mia posizione"><span data-icon="locate" data-size="20"></span></button>
+        <button type="submit" id="searchBtn" class="go-btn" data-i18n-aria="search" aria-label="Cerca"><span data-icon="arrow" data-size="20"></span></button>
+      </div>
+      <div class="radius">
+        <label for="radius"><span data-i18n="radius">Raggio</span> <output id="radiusVal">2</output> km</label>
+        <input id="radius" type="range" min="0.5" max="10" step="0.5" value="2">
+      </div>
+      <p id="searchMsg" class="msg" role="status"></p>
+    </form>
+
+    <nav class="filters" id="filters" aria-label="Filtri"></nav>
+
+    <div class="list-head">
+      <h2 id="listTitle"></h2>
+      <span id="count" class="count"></span>
     </div>
-  </header>
-
-  <main class="layout">
-    <aside class="panel">
-      <form id="searchForm" class="search" autocomplete="off">
-        <label for="searchInput" data-i18n="whereAreYou">Dove sei?</label>
-        <div class="search-row">
-          <input id="searchInput" type="search" data-i18n-placeholder="searchPlaceholder" placeholder="Es. Piazza Taksim, Galata, Kadıköy…">
-          <button type="submit" data-i18n="search">Cerca</button>
-        </div>
-        <button type="button" id="geoBtn" class="link" data-i18n="useMyLocation">📍 Usa la mia posizione</button>
-        <div class="radius">
-          <label for="radius"><span data-i18n="radius">Raggio</span>: <strong id="radiusVal">2</strong> km</label>
-          <input id="radius" type="range" min="0.5" max="10" step="0.5" value="2">
-        </div>
-        <p id="searchMsg" class="msg" role="status"></p>
-      </form>
-
-      <div class="filters" id="filters"></div>
-      <div id="results" class="results"></div>
-    </aside>
-
-    <div id="map" aria-label="Map"></div>
-  </main>
+    <div id="results" class="results"></div>
+  </aside>
 
   <!-- Admin login -->
   <dialog id="loginDlg">
@@ -50,8 +61,8 @@
       <input id="pwInput" type="password" autocomplete="current-password" data-i18n-placeholder="password" placeholder="Password" required>
       <p id="loginMsg" class="msg error"></p>
       <div class="dlg-actions">
-        <button type="button" class="ghost" id="loginCancel" data-i18n="cancel">Annulla</button>
-        <button type="submit" data-i18n="login">Entra</button>
+        <button type="button" class="btn ghost" id="loginCancel" data-i18n="cancel">Annulla</button>
+        <button type="submit" class="btn" data-i18n="login">Entra</button>
       </div>
     </form>
   </dialog>
@@ -60,9 +71,9 @@
   <dialog id="adminDlg" class="wide">
     <div class="dlg-head">
       <h2 data-i18n="adminPanel">Pannello admin</h2>
-      <div>
-        <button type="button" class="ghost" id="logoutBtn" data-i18n="logout">Esci</button>
-        <button type="button" class="ghost" id="adminClose" data-i18n="close">Chiudi</button>
+      <div class="dlg-head-actions">
+        <button type="button" class="btn ghost small" id="logoutBtn" data-i18n="logout">Esci</button>
+        <button type="button" class="icon-btn" id="adminClose" data-i18n-aria="close" aria-label="Chiudi"><span data-icon="x" data-size="18"></span></button>
       </div>
     </div>
 
@@ -81,20 +92,25 @@
       </div>
       <div class="grid2">
         <label><span data-i18n="descIt">Descrizione (italiano)</span>
-          <textarea id="fDescIt" rows="2" maxlength="400"></textarea>
+          <textarea id="fDescIt" rows="3" maxlength="400"></textarea>
         </label>
         <label><span data-i18n="descEn">Descrizione (inglese)</span>
-          <textarea id="fDescEn" rows="2" maxlength="400"></textarea>
+          <textarea id="fDescEn" rows="3" maxlength="400"></textarea>
         </label>
       </div>
       <div class="grid2">
         <label>Lat <input id="fLat" type="number" step="any" required></label>
         <label>Lng <input id="fLng" type="number" step="any" required></label>
       </div>
+      <label class="switch">
+        <input type="checkbox" id="fMust">
+        <span class="track" aria-hidden="true"></span>
+        <span class="switch-label"><span data-icon="star" data-size="16" data-fill="1"></span> <span data-i18n="mustSee">Da non perdere</span></span>
+      </label>
       <p id="adminMsg" class="msg" role="status"></p>
       <div class="form-actions">
-        <button type="submit" id="submitBtn" data-i18n="addPlace">Aggiungi posto</button>
-        <button type="button" id="cancelEdit" class="ghost" hidden data-i18n="cancelEdit">Annulla modifica</button>
+        <button type="submit" class="btn" id="submitBtn" data-i18n="addPlace">Aggiungi posto</button>
+        <button type="button" class="btn ghost" id="cancelEdit" hidden data-i18n="cancelEdit">Annulla modifica</button>
       </div>
     </form>
 

@@ -9,7 +9,8 @@
       "it": "Il miglior döner di Beşiktaş.",
       "en": "The best döner in Beşiktaş."
     },
-    "url": "https://www.google.com/maps/place/Karadeniz+D%C3%B6ner+As%C4%B1m+Usta/@41.04162,28.9996822,16.76z/data=!4m6!3m5!1s0x14cab7a21841b4df:0x3664b8664055456!8m2!3d41.0435433!4d29.0040019"
+    "url": "https://www.google.com/maps/place/Karadeniz+D%C3%B6ner+As%C4%B1m+Usta/@41.04162,28.9996822,16.76z/data=!4m6!3m5!1s0x14cab7a21841b4df:0x3664b8664055456!8m2!3d41.0435433!4d29.0040019",
+    "mustSee": false
   },
   {
     "id": "seed-hamurita",
@@ -21,7 +22,8 @@
       "it": "Ottimo börek a Beşiktaş.",
       "en": "Great börek in Beşiktaş."
     },
-    "url": "https://www.google.com/maps/place/Hamurita/@41.0414528,28.9960626,16.08z/data=!4m6!3m5!1s0x14cab7a1c7072bdb:0x36b23d09a79dc8b3!8m2!3d41.0442827!4d29.0033302"
+    "url": "https://www.google.com/maps/place/Hamurita/@41.0414528,28.9960626,16.08z/data=!4m6!3m5!1s0x14cab7a1c7072bdb:0x36b23d09a79dc8b3!8m2!3d41.0442827!4d29.0033302",
+    "mustSee": false
   },
   {
     "id": "seed-besiktas-citir-pide",
@@ -33,7 +35,8 @@
       "it": "Ottimo cibo turco: pide e lahmacun.",
       "en": "Great Turkish food: pide and lahmacun."
     },
-    "url": "https://www.google.com/maps/place/Be%C5%9Fikta%C5%9F+%C3%87%C4%B1t%C4%B1r+Pide+Lahmacun+Salonu/@41.0444506,29.0015855,17.22z/data=!4m6!3m5!1s0x14cab7a1bbe33c6f:0x1694f10d0ba4aef3!8m2!3d41.0447097!4d29.0034393"
+    "url": "https://www.google.com/maps/place/Be%C5%9Fikta%C5%9F+%C3%87%C4%B1t%C4%B1r+Pide+Lahmacun+Salonu/@41.0444506,29.0015855,17.22z/data=!4m6!3m5!1s0x14cab7a1bbe33c6f:0x1694f10d0ba4aef3!8m2!3d41.0447097!4d29.0034393",
+    "mustSee": false
   },
   {
     "id": "seed-stay-cihangir",
@@ -45,7 +48,8 @@
       "it": "Quartiere bohémien e tranquillo, tra caffè, locali e viste sul Bosforo, a due passi da Taksim.",
       "en": "A laid-back, bohemian neighbourhood of cafés and bars with Bosphorus views, a short walk from Taksim."
     },
-    "url": "https://www.google.com/maps/search/?api=1&query=Cihangir,Istanbul"
+    "url": "https://www.google.com/maps/search/?api=1&query=Cihangir,Istanbul",
+    "mustSee": false
   },
   {
     "id": "seed-stay-beyoglu",
@@ -57,7 +61,8 @@
       "it": "Il cuore della città moderna: İstiklal, Galata, locali e vita notturna, ben collegato a tutto.",
       "en": "The heart of the modern city: İstiklal, Galata, bars and nightlife, well connected to everything."
     },
-    "url": "https://www.google.com/maps/search/?api=1&query=Beyoglu,Istanbul"
+    "url": "https://www.google.com/maps/search/?api=1&query=Beyoglu,Istanbul",
+    "mustSee": false
   },
   {
     "id": "seed-stay-besiktas",
@@ -69,6 +74,7 @@
       "it": "Quartiere vivace e autentico sul Bosforo, con mercato, ottimo cibo di strada e collegamenti via mare.",
       "en": "A lively, authentic Bosphorus neighbourhood with a market, great street food and ferry connections."
     },
-    "url": "https://www.google.com/maps/search/?api=1&query=Besiktas,Istanbul"
+    "url": "https://www.google.com/maps/search/?api=1&query=Besiktas,Istanbul",
+    "mustSee": false
   }
 ]

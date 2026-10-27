@@ -3,7 +3,7 @@
 // The admin password is read from the ADMIN_PASSWORD env var (falls back to the default below).
 
 const BLOB_PATH = 'istanbultips/places.json';
-const CATEGORIES = new Set(['eat', 'see', 'stay', 'cafe', 'bar', 'hamam', 'area', 'other']);
+const CATEGORIES = new Set(['eat', 'cafe', 'bar', 'club', 'see', 'hamam', 'area', 'stay']);
 
 function cleanText(v, max) {
   return typeof v === 'string' ? v.slice(0, max) : '';
@@ -22,7 +22,8 @@ function sanitize(places) {
     out.push({
       id: cleanText(p.id, 64) || 'p-' + Math.random().toString(36).slice(2, 10),
       name,
-      category: CATEGORIES.has(p.category) ? p.category : (p.category === 'drink' ? 'cafe' : 'other'),
+      category: CATEGORIES.has(p.category) ? p.category : (p.category === 'drink' ? 'cafe' : 'see'),
+      mustSee: p.mustSee === true,
       lat, lng,
       desc: { it: cleanText(p.desc && p.desc.it, 400), en: cleanText(p.desc && p.desc.en, 400) },
       url: /^https?:\/\//i.test(url) ? url : ''
@@ -41,7 +42,10 @@ module.exports = async function handler(req, res) {
       const blob = blobs.find((b) => b.pathname === BLOB_PATH);
       if (!blob) return res.status(200).json({ places: null });
       const r = await fetch(blob.url + '?t=' + Date.now(), { cache: 'no-store' });
-      return res.status(200).json({ places: await r.json() });
+      const data = await r.json();
+      // Old format = plain array; new format = { places, applied } ("applied" = ids of data/additions.json already merged).
+      if (Array.isArray(data)) return res.status(200).json({ places: data, applied: [] });
+      return res.status(200).json({ places: data.places || [], applied: Array.isArray(data.applied) ? data.applied : [] });
     } catch (e) {
       return res.status(200).json({ places: null });
     }
@@ -55,9 +59,10 @@ module.exports = async function handler(req, res) {
 
     const places = sanitize(body.places);
     if (!places) return res.status(400).json({ error: 'invalid places' });
+    const applied = (Array.isArray(body.applied) ? body.applied : []).filter((x) => typeof x === 'string').map((x) => x.slice(0, 64)).slice(0, 200);
     try {
       const { put } = await import('@vercel/blob');
-      await put(BLOB_PATH, JSON.stringify(places), {
+      await put(BLOB_PATH, JSON.stringify({ places, applied }), {
         access: 'public', contentType: 'application/json',
         addRandomSuffix: false, allowOverwrite: true
       });

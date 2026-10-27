@@ -1,0 +1,15 @@
+[
+  {
+    "id": "add-bulgurlu-hamami",
+    "name": "Bulgurlu Hamamı",
+    "category": "hamam",
+    "mustSee": false,
+    "lat": 41.0167,
+    "lng": 29.0768,
+    "desc": {
+      "it": "Hammam tipico a basso costo.",
+      "en": "Typical low-cost hammam."
+    },
+    "url": "https://www.google.com/maps/search/?api=1&query=Bulgurlu+Hamam%C4%B1+Bulgurlu+Caddesi+47%2FC+%C3%9Csk%C3%BCdar+%C4%B0stanbul"
+  }
+]
