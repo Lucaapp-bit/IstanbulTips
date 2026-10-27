@@ -92,7 +92,10 @@
         <label>Lng <input id="fLng" type="number" step="any" required></label>
       </div>
       <p id="adminMsg" class="msg" role="status"></p>
-      <button type="submit" data-i18n="addPlace">Aggiungi posto</button>
+      <div class="form-actions">
+        <button type="submit" id="submitBtn" data-i18n="addPlace">Aggiungi posto</button>
+        <button type="button" id="cancelEdit" class="ghost" hidden data-i18n="cancelEdit">Annulla modifica</button>
+      </div>
     </form>
 
     <h3 data-i18n="allPlaces">Tutti i posti</h3>

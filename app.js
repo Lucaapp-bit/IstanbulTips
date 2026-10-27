@@ -6,7 +6,7 @@
     it: {
       admin: 'Admin', whereAreYou: 'Dove sei?', searchPlaceholder: 'Es. Piazza Taksim, Galata, Kadıköy…',
       search: 'Cerca', useMyLocation: '📍 Usa la mia posizione', radius: 'Raggio',
-      all: 'Tutti', eat: 'Mangiare', see: 'Da vedere', stay: 'Dove alloggiare', drink: 'Bere & caffè', other: 'Altro',
+      all: 'Tutti', eat: 'Mangiare', see: 'Da vedere', stay: 'Dove alloggiare', cafe: 'Caffè', bar: 'Bar', other: 'Altro',
       openMaps: 'Apri in Google Maps', away: 'a', noResultsNear: 'Nessun consiglio entro il raggio scelto. Ecco i più vicini:',
       nearYou: 'Consigli vicino a te', allRecs: 'Tutti i consigli', notFound: 'Posizione non trovata. Prova con un altro nome.',
       searching: 'Cerco…', geoDenied: 'Impossibile ottenere la posizione.', youAreHere: 'Sei qui',
@@ -20,12 +20,13 @@
       pickedOnMap: 'Coordinate prese dalla mappa.', localOnly: 'Salvataggio sul server non disponibile: salvato solo in questo browser.',
       saveFail: 'Errore di salvataggio.',
       mapError: 'Impossibile caricare la mappa.',
+      edit: 'Modifica', saveChanges: 'Salva modifiche', cancelEdit: 'Annulla modifica', editing: 'Stai modificando', saved: 'Modifiche salvate.',
       translating: 'Traduco in inglese…', translateFail: 'Traduzione automatica non riuscita: ho copiato il testo italiano.'
     },
     en: {
       admin: 'Admin', whereAreYou: 'Where are you?', searchPlaceholder: 'E.g. Taksim Square, Galata, Kadıköy…',
       search: 'Search', useMyLocation: '📍 Use my location', radius: 'Radius',
-      all: 'All', eat: 'Eat', see: 'See', stay: 'Where to stay', drink: 'Drinks & coffee', other: 'Other',
+      all: 'All', eat: 'Eat', see: 'See', stay: 'Where to stay', cafe: 'Cafés', bar: 'Bars', other: 'Other',
       openMaps: 'Open in Google Maps', away: '', noResultsNear: 'No tips within the chosen radius. Here are the closest ones:',
       nearYou: 'Tips near you', allRecs: 'All recommendations', notFound: 'Location not found. Try another name.',
       searching: 'Searching…', geoDenied: 'Could not get your location.', youAreHere: 'You are here',
@@ -39,10 +40,11 @@
       pickedOnMap: 'Coordinates taken from the map.', localOnly: 'Server saving unavailable: saved in this browser only.',
       saveFail: 'Save error.',
       mapError: 'Could not load the map.',
+      edit: 'Edit', saveChanges: 'Save changes', cancelEdit: 'Cancel edit', editing: 'Editing', saved: 'Changes saved.',
       translating: 'Translating to English…', translateFail: 'Automatic translation failed: the Italian text was copied.'
     }
   };
-  const CATS = { eat: '🍽️', see: '🏛️', stay: '🛏️', drink: '☕', other: '⭐' };
+  const CATS = { eat: '🍽️', cafe: '☕', bar: '🍸', see: '🏛️', stay: '🛏️', other: '⭐' };
   const CENTER = [41.0369, 28.985];
 
   const $ = (id) => document.getElementById(id);
@@ -248,16 +250,18 @@
   }));
 
   /* ---------- data ---------- */
+  const fixLegacy = (list) => list.map((p) => (p.category === 'drink' ? { ...p, category: 'cafe' } : p));
+
   async function loadPlaces() {
     try {
       const r = await fetch('/api/places', { cache: 'no-store' });
       if (r.ok) {
         const j = await r.json();
-        if (Array.isArray(j.places)) { places = j.places; return; }
+        if (Array.isArray(j.places)) { places = fixLegacy(j.places); return; }
       }
     } catch { /* fall through */ }
     const local = store.get('places-local');
-    if (local) { try { places = JSON.parse(local); return; } catch { /* ignore */ } }
+    if (local) { try { places = fixLegacy(JSON.parse(local)); return; } catch { /* ignore */ } }
     const r = await fetch('data/places.json');
     places = await r.json();
   }
@@ -311,12 +315,16 @@
   function renderAdminList() {
     $('adminList').innerHTML = places.map((p) => `
       <li><div>${CATS[p.category] || CATS.other} <strong>${esc(p.name)}</strong><small>${esc(descOf(p))}</small></div>
-      <button type="button" data-del="${esc(p.id)}">${esc(t('del'))}</button></li>`).join('');
+      <div class="row-actions"><button type="button" data-edit="${esc(p.id)}">${esc(t('edit'))}</button>
+      <button type="button" data-del="${esc(p.id)}">${esc(t('del'))}</button></div></li>`).join('');
   }
 
   $('adminList').addEventListener('click', async (e) => {
+    const eb = e.target.closest('[data-edit]');
+    if (eb) { startEdit(eb.dataset.edit); return; }
     const b = e.target.closest('[data-del]');
     if (!b || !confirm(t('confirmDel'))) return;
+    if (b.dataset.del === editingId) { $('placeForm').reset(); $('adminMsg').textContent = ''; }
     const res = await savePlaces(places.filter((p) => p.id !== b.dataset.del));
     $('adminMsg').textContent = res.ok ? (res.local ? t('localOnly') : t('deleted')) : t('wrongPw');
     renderAdminList(); render();
@@ -368,10 +376,9 @@
     return out.join(' ');
   }
 
-  let enManual = false, trSeq = 0, trTimer = null;
-  $('fDescEn').addEventListener('input', () => { enManual = $('fDescEn').value.trim() !== ''; });
-  $('placeForm').addEventListener('reset', () => { enManual = false; clearTimeout(trTimer); trSeq++; });
-  $('fDescIt').addEventListener('input', () => {
+  let enManual = false, trSeq = 0, trTimer = null, editingId = null;
+
+  function scheduleTranslate() {
     clearTimeout(trTimer);
     if (enManual) return;
     const txt = $('fDescIt').value.trim();
@@ -384,7 +391,39 @@
         if (my === trSeq && !enManual) { $('fDescEn').value = en; $('adminMsg').textContent = ''; }
       } catch { if (my === trSeq) $('adminMsg').textContent = t('translateFail'); }
     }, 900);
-  });
+  }
+
+  function setEditing(id) {
+    editingId = id;
+    const sb = $('submitBtn');
+    sb.dataset.i18n = id ? 'saveChanges' : 'addPlace';
+    sb.textContent = t(sb.dataset.i18n);
+    $('cancelEdit').hidden = !id;
+  }
+
+  // Typing in EN = manual (protected); clearing EN re-enables auto-translation from IT.
+  $('fDescEn').addEventListener('input', () => { enManual = $('fDescEn').value.trim() !== ''; if (!enManual) scheduleTranslate(); });
+  $('fDescIt').addEventListener('input', scheduleTranslate);
+  $('placeForm').addEventListener('reset', () => { enManual = false; clearTimeout(trTimer); trSeq++; setEditing(null); });
+  $('cancelEdit').addEventListener('click', () => { $('placeForm').reset(); $('adminMsg').textContent = ''; });
+
+  function startEdit(id) {
+    const p = places.find((x) => x.id === id);
+    if (!p) return;
+    $('placeForm').reset(); // also leaves any previous edit
+    $('fUrl').value = p.url || '';
+    $('fName').value = p.name;
+    $('fCat').value = CATS[p.category] ? p.category : 'other';
+    $('fDescIt').value = (p.desc && p.desc.it) || '';
+    $('fDescEn').value = (p.desc && p.desc.en) || '';
+    $('fLat').value = p.lat;
+    $('fLng').value = p.lng;
+    enManual = $('fDescEn').value.trim() !== ''; // keep the existing English unless cleared
+    setEditing(id);
+    $('adminMsg').textContent = `${t('editing')}: ${p.name}`;
+    adminDlg.scrollTop = 0;
+    if (map) map.flyTo({ center: [p.lng, p.lat], zoom: Math.max(map.getZoom(), 15) });
+  }
 
   $('placeForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -396,7 +435,7 @@
       try { descEn = await translateIt(descIt); } catch { descEn = descIt; $('adminMsg').textContent = t('translateFail'); }
     }
     const p = {
-      id: 'p-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      id: editingId || ('p-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
       name: $('fName').value.trim(),
       category: $('fCat').value,
       lat: parseFloat($('fLat').value),
@@ -405,10 +444,11 @@
       url: $('fUrl').value.trim() || ''
     };
     if (!p.name || Number.isNaN(p.lat) || Number.isNaN(p.lng)) return;
-    const res = await savePlaces([...places, p]);
+    const wasEdit = !!editingId;
+    const res = await savePlaces(wasEdit ? places.map((x) => (x.id === editingId ? p : x)) : [...places, p]);
     if (!res.ok) { $('adminMsg').textContent = t('wrongPw'); return; }
-    $('adminMsg').textContent = res.local ? t('localOnly') : t('added');
     $('placeForm').reset();
+    $('adminMsg').textContent = res.local ? t('localOnly') : t(wasEdit ? 'saved' : 'added');
     renderAdminList(); render();
     if (map) map.flyTo({ center: [p.lng, p.lat], zoom: 16 });
   });

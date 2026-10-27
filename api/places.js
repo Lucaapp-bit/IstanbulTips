@@ -3,7 +3,7 @@
 // The admin password is read from the ADMIN_PASSWORD env var (falls back to the default below).
 
 const BLOB_PATH = 'istanbultips/places.json';
-const CATEGORIES = new Set(['eat', 'see', 'stay', 'drink', 'other']);
+const CATEGORIES = new Set(['eat', 'see', 'stay', 'cafe', 'bar', 'other']);
 
 function cleanText(v, max) {
   return typeof v === 'string' ? v.slice(0, max) : '';
@@ -22,7 +22,7 @@ function sanitize(places) {
     out.push({
       id: cleanText(p.id, 64) || 'p-' + Math.random().toString(36).slice(2, 10),
       name,
-      category: CATEGORIES.has(p.category) ? p.category : 'other',
+      category: CATEGORIES.has(p.category) ? p.category : (p.category === 'drink' ? 'cafe' : 'other'),
       lat, lng,
       desc: { it: cleanText(p.desc && p.desc.it, 400), en: cleanText(p.desc && p.desc.en, 400) },
       url: /^https?:\/\//i.test(url) ? url : ''

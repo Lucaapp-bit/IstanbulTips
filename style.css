@@ -114,3 +114,6 @@ body.admin-open #map { cursor: crosshair; }
 .map-error { height: 100%; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); background: #efe9df; }
 .info { color: #1f2933; font-size: .92rem; max-width: 220px; }
 .info a { color: var(--accent); font-weight: 600; }
+
+.form-actions { display: flex; gap: 8px; margin-bottom: 6px; }
+.row-actions { display: flex; gap: 6px; flex-shrink: 0; }
