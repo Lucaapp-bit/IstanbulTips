@@ -6,7 +6,7 @@
     it: {
       admin: 'Admin', whereAreYou: 'Dove sei?', searchPlaceholder: 'Es. Piazza Taksim, Galata, Kadıköy…',
       search: 'Cerca', useMyLocation: '📍 Usa la mia posizione', radius: 'Raggio',
-      all: 'Tutti', eat: 'Mangiare', see: 'Da vedere', stay: 'Dove alloggiare', cafe: 'Caffè', bar: 'Bar', other: 'Altro',
+      all: 'Tutti', eat: 'Mangiare', see: 'Da vedere', hamam: 'Hamam', area: 'Quartieri', stay: 'Dove alloggiare', cafe: 'Caffè', bar: 'Bar', other: 'Altro',
       openMaps: 'Apri in Google Maps', away: 'a', noResultsNear: 'Nessun consiglio entro il raggio scelto. Ecco i più vicini:',
       nearYou: 'Consigli vicino a te', allRecs: 'Tutti i consigli', notFound: 'Posizione non trovata. Prova con un altro nome.',
       searching: 'Cerco…', geoDenied: 'Impossibile ottenere la posizione.', youAreHere: 'Sei qui',
@@ -20,13 +20,14 @@
       pickedOnMap: 'Coordinate prese dalla mappa.', localOnly: 'Salvataggio sul server non disponibile: salvato solo in questo browser.',
       saveFail: 'Errore di salvataggio.',
       mapError: 'Impossibile caricare la mappa.',
+      noPlaces: 'Ancora nessun posto in questa categoria.',
       edit: 'Modifica', saveChanges: 'Salva modifiche', cancelEdit: 'Annulla modifica', editing: 'Stai modificando', saved: 'Modifiche salvate.',
       translating: 'Traduco in inglese…', translateFail: 'Traduzione automatica non riuscita: ho copiato il testo italiano.'
     },
     en: {
       admin: 'Admin', whereAreYou: 'Where are you?', searchPlaceholder: 'E.g. Taksim Square, Galata, Kadıköy…',
       search: 'Search', useMyLocation: '📍 Use my location', radius: 'Radius',
-      all: 'All', eat: 'Eat', see: 'See', stay: 'Where to stay', cafe: 'Cafés', bar: 'Bars', other: 'Other',
+      all: 'All', eat: 'Eat', see: 'See', hamam: 'Hammam', area: 'Neighbourhoods', stay: 'Where to stay', cafe: 'Cafés', bar: 'Bars', other: 'Other',
       openMaps: 'Open in Google Maps', away: '', noResultsNear: 'No tips within the chosen radius. Here are the closest ones:',
       nearYou: 'Tips near you', allRecs: 'All recommendations', notFound: 'Location not found. Try another name.',
       searching: 'Searching…', geoDenied: 'Could not get your location.', youAreHere: 'You are here',
@@ -40,11 +41,12 @@
       pickedOnMap: 'Coordinates taken from the map.', localOnly: 'Server saving unavailable: saved in this browser only.',
       saveFail: 'Save error.',
       mapError: 'Could not load the map.',
+      noPlaces: 'No places in this category yet.',
       edit: 'Edit', saveChanges: 'Save changes', cancelEdit: 'Cancel edit', editing: 'Editing', saved: 'Changes saved.',
       translating: 'Translating to English…', translateFail: 'Automatic translation failed: the Italian text was copied.'
     }
   };
-  const CATS = { eat: '🍽️', cafe: '☕', bar: '🍸', see: '🏛️', stay: '🛏️', other: '⭐' };
+  const CATS = { eat: '🍽️', cafe: '☕', bar: '🍸', see: '🏛️', hamam: '🧖', area: '🏘️', stay: '🛏️', other: '⭐' };
   const CENTER = [41.0369, 28.985];
 
   const $ = (id) => document.getElementById(id);
@@ -156,7 +158,7 @@
         markers.set(p.id, m);
       });
     }
-    $('results').innerHTML = `<p class="empty"><strong>${esc(note)}</strong></p>` + list.map((p) => `
+    $('results').innerHTML = (list.length ? `<p class="empty"><strong>${esc(note)}</strong></p>` : '') + list.map((p) => `
       <div class="card" data-id="${esc(p.id)}">
         <h3>${CATS[p.category] || CATS.other} ${esc(p.name)}</h3>
         <p>${esc(descOf(p))}</p>
@@ -164,7 +166,7 @@
           <span>${p._d != null ? esc(fmtDist(p._d)) : ''}</span>
           <a href="${esc(mapsUrl(p))}" target="_blank" rel="noopener">${esc(t('openMaps'))}</a>
         </div>
-      </div>`).join('');
+      </div>`).join('') || `<p class="empty">${esc(t('noPlaces'))}</p>`;
   }
 
   function fitView() {
@@ -250,7 +252,11 @@
   }));
 
   /* ---------- data ---------- */
-  const fixLegacy = (list) => list.map((p) => (p.category === 'drink' ? { ...p, category: 'cafe' } : p));
+  const fixLegacy = (list) => list.map((p) => {
+    if (p.category === 'drink') return { ...p, category: 'cafe' };
+    if (p.category === 'stay' && /^seed-stay-(cihangir|beyoglu|besiktas)$/.test(p.id)) return { ...p, category: 'area' };
+    return p;
+  });
 
   async function loadPlaces() {
     try {

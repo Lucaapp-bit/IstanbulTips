@@ -38,7 +38,7 @@
   {
     "id": "seed-stay-cihangir",
     "name": "Cihangir",
-    "category": "stay",
+    "category": "area",
     "lat": 41.0316,
     "lng": 28.983,
     "desc": {
@@ -50,7 +50,7 @@
   {
     "id": "seed-stay-beyoglu",
     "name": "Beyoğlu",
-    "category": "stay",
+    "category": "area",
     "lat": 41.0345,
     "lng": 28.978,
     "desc": {
@@ -62,7 +62,7 @@
   {
     "id": "seed-stay-besiktas",
     "name": "Beşiktaş",
-    "category": "stay",
+    "category": "area",
     "lat": 41.043,
     "lng": 29.007,
     "desc": {
