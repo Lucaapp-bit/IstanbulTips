@@ -5,7 +5,8 @@ Mappa di Istanbul con i miei consigli (ristoranti, cose da vedere…). Sito in *
 ## Funzioni
 - Mappa vettoriale MapLibre + OpenFreeMap (gratuita, nessuna API key né carta)
 - Ricerca posizione (Nominatim/OpenStreetMap) o geolocalizzazione → consigli entro un raggio regolabile, ordinati per distanza
-- Filtri per categoria, switch IT/EN
+- Filtri per categoria (Mangiare, Da vedere, Dove alloggiare, Bere & caffè, Altro), switch IT/EN
+- Traduzione automatica IT→EN della descrizione quando aggiungi un posto (MyMemory, gratuita)
 - Admin: pulsante **Admin** in alto → password → aggiungi posto (incolla un link Google Maps per compilare nome e coordinate, oppure clicca sulla mappa), elimina posti
 
 ## Deploy (Vercel)
@@ -16,4 +17,4 @@ Mappa di Istanbul con i miei consigli (ristoranti, cose da vedere…). Sito in *
 Senza Blob configurato il sito funziona comunque con i posti di `data/places.json`; le aggiunte admin restano salvate solo nel browser di chi le fa.
 
 ## Dati iniziali
-`data/places.json`. Categorie: `eat`, `see`, `drink`, `other`.
+`data/places.json`. Categorie: `eat`, `see`, `stay`, `drink`, `other`.

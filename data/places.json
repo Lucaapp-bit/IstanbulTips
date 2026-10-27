@@ -34,5 +34,41 @@
       "en": "Great Turkish food: pide and lahmacun."
     },
     "url": "https://www.google.com/maps/place/Be%C5%9Fikta%C5%9F+%C3%87%C4%B1t%C4%B1r+Pide+Lahmacun+Salonu/@41.0444506,29.0015855,17.22z/data=!4m6!3m5!1s0x14cab7a1bbe33c6f:0x1694f10d0ba4aef3!8m2!3d41.0447097!4d29.0034393"
+  },
+  {
+    "id": "seed-stay-cihangir",
+    "name": "Cihangir",
+    "category": "stay",
+    "lat": 41.0316,
+    "lng": 28.983,
+    "desc": {
+      "it": "Quartiere bohémien e tranquillo, tra caffè, locali e viste sul Bosforo, a due passi da Taksim.",
+      "en": "A laid-back, bohemian neighbourhood of cafés and bars with Bosphorus views, a short walk from Taksim."
+    },
+    "url": "https://www.google.com/maps/search/?api=1&query=Cihangir,Istanbul"
+  },
+  {
+    "id": "seed-stay-beyoglu",
+    "name": "Beyoğlu",
+    "category": "stay",
+    "lat": 41.0345,
+    "lng": 28.978,
+    "desc": {
+      "it": "Il cuore della città moderna: İstiklal, Galata, locali e vita notturna, ben collegato a tutto.",
+      "en": "The heart of the modern city: İstiklal, Galata, bars and nightlife, well connected to everything."
+    },
+    "url": "https://www.google.com/maps/search/?api=1&query=Beyoglu,Istanbul"
+  },
+  {
+    "id": "seed-stay-besiktas",
+    "name": "Beşiktaş",
+    "category": "stay",
+    "lat": 41.043,
+    "lng": 29.007,
+    "desc": {
+      "it": "Quartiere vivace e autentico sul Bosforo, con mercato, ottimo cibo di strada e collegamenti via mare.",
+      "en": "A lively, authentic Bosphorus neighbourhood with a market, great street food and ferry connections."
+    },
+    "url": "https://www.google.com/maps/search/?api=1&query=Besiktas,Istanbul"
   }
 ]

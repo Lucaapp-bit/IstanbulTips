@@ -3,7 +3,7 @@
 // The admin password is read from the ADMIN_PASSWORD env var (falls back to the default below).
 
 const BLOB_PATH = 'istanbultips/places.json';
-const CATEGORIES = new Set(['eat', 'see', 'drink', 'other']);
+const CATEGORIES = new Set(['eat', 'see', 'stay', 'drink', 'other']);
 
 function cleanText(v, max) {
   return typeof v === 'string' ? v.slice(0, max) : '';

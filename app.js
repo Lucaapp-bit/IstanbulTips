@@ -6,41 +6,43 @@
     it: {
       admin: 'Admin', whereAreYou: 'Dove sei?', searchPlaceholder: 'Es. Piazza Taksim, Galata, Kadıköy…',
       search: 'Cerca', useMyLocation: '📍 Usa la mia posizione', radius: 'Raggio',
-      all: 'Tutti', eat: 'Mangiare', see: 'Da vedere', drink: 'Bere & caffè', other: 'Altro',
+      all: 'Tutti', eat: 'Mangiare', see: 'Da vedere', stay: 'Dove alloggiare', drink: 'Bere & caffè', other: 'Altro',
       openMaps: 'Apri in Google Maps', away: 'a', noResultsNear: 'Nessun consiglio entro il raggio scelto. Ecco i più vicini:',
       nearYou: 'Consigli vicino a te', allRecs: 'Tutti i consigli', notFound: 'Posizione non trovata. Prova con un altro nome.',
       searching: 'Cerco…', geoDenied: 'Impossibile ottenere la posizione.', youAreHere: 'Sei qui',
       adminLogin: 'Accesso admin', password: 'Password', cancel: 'Annulla', login: 'Entra', wrongPw: 'Password errata.',
       adminPanel: 'Pannello admin', logout: 'Esci', close: 'Chiudi', gmapsLink: 'Link Google Maps (opzionale)',
       gmapsHint: 'Incolla il link: nome e coordinate vengono compilati da soli. Oppure clicca sulla mappa per scegliere il punto.',
-      name: 'Nome', category: 'Categoria', descIt: 'Descrizione (italiano)', descEn: 'Descrizione (inglese)',
+      name: 'Nome', category: 'Categoria', descIt: 'Descrizione (italiano)', descEn: 'Descrizione (inglese, tradotta in automatico)',
       addPlace: 'Aggiungi posto', allPlaces: 'Tutti i posti', del: 'Elimina', confirmDel: 'Eliminare questo posto?',
       added: 'Posto aggiunto!', deleted: 'Posto eliminato.', parsed: 'Dati letti dal link.',
       shortLink: 'Link abbreviato: apri il link nel browser e copia l’URL completo, oppure clicca sulla mappa.',
       pickedOnMap: 'Coordinate prese dalla mappa.', localOnly: 'Salvataggio sul server non disponibile: salvato solo in questo browser.',
       saveFail: 'Errore di salvataggio.',
-      mapError: 'Impossibile caricare la mappa.'
+      mapError: 'Impossibile caricare la mappa.',
+      translating: 'Traduco in inglese…', translateFail: 'Traduzione automatica non riuscita: ho copiato il testo italiano.'
     },
     en: {
       admin: 'Admin', whereAreYou: 'Where are you?', searchPlaceholder: 'E.g. Taksim Square, Galata, Kadıköy…',
       search: 'Search', useMyLocation: '📍 Use my location', radius: 'Radius',
-      all: 'All', eat: 'Eat', see: 'See', drink: 'Drinks & coffee', other: 'Other',
+      all: 'All', eat: 'Eat', see: 'See', stay: 'Where to stay', drink: 'Drinks & coffee', other: 'Other',
       openMaps: 'Open in Google Maps', away: '', noResultsNear: 'No tips within the chosen radius. Here are the closest ones:',
       nearYou: 'Tips near you', allRecs: 'All recommendations', notFound: 'Location not found. Try another name.',
       searching: 'Searching…', geoDenied: 'Could not get your location.', youAreHere: 'You are here',
       adminLogin: 'Admin login', password: 'Password', cancel: 'Cancel', login: 'Log in', wrongPw: 'Wrong password.',
       adminPanel: 'Admin panel', logout: 'Log out', close: 'Close', gmapsLink: 'Google Maps link (optional)',
       gmapsHint: 'Paste the link: name and coordinates are filled in automatically. Or click the map to pick the spot.',
-      name: 'Name', category: 'Category', descIt: 'Description (Italian)', descEn: 'Description (English)',
+      name: 'Name', category: 'Category', descIt: 'Description (Italian)', descEn: 'Description (English, auto-translated)',
       addPlace: 'Add place', allPlaces: 'All places', del: 'Delete', confirmDel: 'Delete this place?',
       added: 'Place added!', deleted: 'Place deleted.', parsed: 'Data read from the link.',
       shortLink: 'Shortened link: open it in the browser and copy the full URL, or click the map.',
       pickedOnMap: 'Coordinates taken from the map.', localOnly: 'Server saving unavailable: saved in this browser only.',
       saveFail: 'Save error.',
-      mapError: 'Could not load the map.'
+      mapError: 'Could not load the map.',
+      translating: 'Translating to English…', translateFail: 'Automatic translation failed: the Italian text was copied.'
     }
   };
-  const CATS = { eat: '🍽️', see: '🏛️', drink: '☕', other: '⭐' };
+  const CATS = { eat: '🍽️', see: '🏛️', stay: '🛏️', drink: '☕', other: '⭐' };
   const CENTER = [41.0369, 28.985];
 
   const $ = (id) => document.getElementById(id);
@@ -340,15 +342,66 @@
     $('adminMsg').textContent = t('parsed');
   });
 
+  /* ---------- auto-translation IT -> EN (MyMemory, free, no key) ---------- */
+  const decodeEntities = (s) => { const d = document.createElement('textarea'); d.innerHTML = s; return d.value; };
+
+  async function translateChunk(text) {
+    const r = await fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text) + '&langpair=it|en');
+    if (!r.ok) throw new Error('translate');
+    const j = await r.json();
+    const out = j && j.responseData && j.responseData.translatedText;
+    if (!out || Number(j.responseStatus) !== 200) throw new Error('translate');
+    return decodeEntities(out);
+  }
+
+  async function translateIt(text) {
+    // MyMemory accepts ~500 bytes per request: split long text by sentence.
+    const parts = text.split(/(?<=[.!?])\s+/);
+    const chunks = [];
+    let cur = '';
+    for (const p of parts) {
+      if (new TextEncoder().encode(cur + ' ' + p).length > 450 && cur) { chunks.push(cur); cur = p; } else cur = cur ? cur + ' ' + p : p;
+    }
+    if (cur) chunks.push(cur);
+    const out = [];
+    for (const c of chunks) out.push(await translateChunk(c));
+    return out.join(' ');
+  }
+
+  let enManual = false, trSeq = 0, trTimer = null;
+  $('fDescEn').addEventListener('input', () => { enManual = $('fDescEn').value.trim() !== ''; });
+  $('placeForm').addEventListener('reset', () => { enManual = false; clearTimeout(trTimer); trSeq++; });
+  $('fDescIt').addEventListener('input', () => {
+    clearTimeout(trTimer);
+    if (enManual) return;
+    const txt = $('fDescIt').value.trim();
+    if (!txt) { $('fDescEn').value = ''; return; }
+    trTimer = setTimeout(async () => {
+      const my = ++trSeq;
+      $('adminMsg').textContent = t('translating');
+      try {
+        const en = await translateIt(txt);
+        if (my === trSeq && !enManual) { $('fDescEn').value = en; $('adminMsg').textContent = ''; }
+      } catch { if (my === trSeq) $('adminMsg').textContent = t('translateFail'); }
+    }, 900);
+  });
+
   $('placeForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    clearTimeout(trTimer); trSeq++;
+    const descIt = $('fDescIt').value.trim();
+    let descEn = $('fDescEn').value.trim();
+    if (!descEn && descIt) {
+      $('adminMsg').textContent = t('translating');
+      try { descEn = await translateIt(descIt); } catch { descEn = descIt; $('adminMsg').textContent = t('translateFail'); }
+    }
     const p = {
       id: 'p-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       name: $('fName').value.trim(),
       category: $('fCat').value,
       lat: parseFloat($('fLat').value),
       lng: parseFloat($('fLng').value),
-      desc: { it: $('fDescIt').value.trim(), en: $('fDescEn').value.trim() },
+      desc: { it: descIt, en: descEn },
       url: $('fUrl').value.trim() || ''
     };
     if (!p.name || Number.isNaN(p.lat) || Number.isNaN(p.lng)) return;
