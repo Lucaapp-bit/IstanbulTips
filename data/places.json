@@ -1,0 +1,38 @@
+[
+  {
+    "id": "seed-karadeniz-doner",
+    "name": "Karadeniz Döner Asım Usta",
+    "category": "eat",
+    "lat": 41.0435433,
+    "lng": 29.0040019,
+    "desc": {
+      "it": "Il miglior döner di Beşiktaş.",
+      "en": "The best döner in Beşiktaş."
+    },
+    "url": "https://www.google.com/maps/place/Karadeniz+D%C3%B6ner+As%C4%B1m+Usta/@41.04162,28.9996822,16.76z/data=!4m6!3m5!1s0x14cab7a21841b4df:0x3664b8664055456!8m2!3d41.0435433!4d29.0040019"
+  },
+  {
+    "id": "seed-hamurita",
+    "name": "Hamurita",
+    "category": "eat",
+    "lat": 41.0442827,
+    "lng": 29.0033302,
+    "desc": {
+      "it": "Ottimo börek a Beşiktaş.",
+      "en": "Great börek in Beşiktaş."
+    },
+    "url": "https://www.google.com/maps/place/Hamurita/@41.0414528,28.9960626,16.08z/data=!4m6!3m5!1s0x14cab7a1c7072bdb:0x36b23d09a79dc8b3!8m2!3d41.0442827!4d29.0033302"
+  },
+  {
+    "id": "seed-besiktas-citir-pide",
+    "name": "Beşiktaş Çıtır Pide Lahmacun Salonu",
+    "category": "eat",
+    "lat": 41.0447097,
+    "lng": 29.0034393,
+    "desc": {
+      "it": "Ottimo cibo turco: pide e lahmacun.",
+      "en": "Great Turkish food: pide and lahmacun."
+    },
+    "url": "https://www.google.com/maps/place/Be%C5%9Fikta%C5%9F+%C3%87%C4%B1t%C4%B1r+Pide+Lahmacun+Salonu/@41.0444506,29.0015855,17.22z/data=!4m6!3m5!1s0x14cab7a1bbe33c6f:0x1694f10d0ba4aef3!8m2!3d41.0447097!4d29.0034393"
+  }
+]

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Istanbul Tips</title>
+  <meta name="description" content="I miei consigli per Istanbul — My Istanbul recommendations">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Istanbul Tips</h1>
+    <div class="topbar-actions">
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="it">IT</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+      <button type="button" id="adminBtn" class="ghost" data-i18n="admin">Admin</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="panel">
+      <form id="searchForm" class="search" autocomplete="off">
+        <label for="searchInput" data-i18n="whereAreYou">Dove sei?</label>
+        <div class="search-row">
+          <input id="searchInput" type="search" data-i18n-placeholder="searchPlaceholder" placeholder="Es. Piazza Taksim, Galata, Kadıköy…">
+          <button type="submit" data-i18n="search">Cerca</button>
+        </div>
+        <button type="button" id="geoBtn" class="link" data-i18n="useMyLocation">📍 Usa la mia posizione</button>
+        <div class="radius">
+          <label for="radius"><span data-i18n="radius">Raggio</span>: <strong id="radiusVal">2</strong> km</label>
+          <input id="radius" type="range" min="0.5" max="10" step="0.5" value="2">
+        </div>
+        <p id="searchMsg" class="msg" role="status"></p>
+      </form>
+
+      <div class="filters" id="filters"></div>
+      <div id="results" class="results"></div>
+    </aside>
+
+    <div id="map" aria-label="Map"></div>
+  </main>
+
+  <!-- Admin login -->
+  <dialog id="loginDlg">
+    <form method="dialog" id="loginForm">
+      <h2 data-i18n="adminLogin">Accesso admin</h2>
+      <input id="pwInput" type="password" autocomplete="current-password" data-i18n-placeholder="password" placeholder="Password" required>
+      <p id="loginMsg" class="msg error"></p>
+      <div class="dlg-actions">
+        <button type="button" class="ghost" id="loginCancel" data-i18n="cancel">Annulla</button>
+        <button type="submit" data-i18n="login">Entra</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Admin panel -->
+  <dialog id="adminDlg" class="wide">
+    <div class="dlg-head">
+      <h2 data-i18n="adminPanel">Pannello admin</h2>
+      <div>
+        <button type="button" class="ghost" id="logoutBtn" data-i18n="logout">Esci</button>
+        <button type="button" class="ghost" id="adminClose" data-i18n="close">Chiudi</button>
+      </div>
+    </div>
+
+    <form id="placeForm" class="place-form">
+      <label><span data-i18n="gmapsLink">Link Google Maps (opzionale)</span>
+        <input id="fUrl" type="url" placeholder="https://www.google.com/maps/place/…">
+      </label>
+      <p class="hint" data-i18n="gmapsHint">Incolla il link: nome e coordinate vengono compilati da soli. Oppure clicca sulla mappa per scegliere il punto.</p>
+      <div class="grid2">
+        <label><span data-i18n="name">Nome</span>
+          <input id="fName" required maxlength="120">
+        </label>
+        <label><span data-i18n="category">Categoria</span>
+          <select id="fCat"></select>
+        </label>
+      </div>
+      <div class="grid2">
+        <label><span data-i18n="descIt">Descrizione (italiano)</span>
+          <textarea id="fDescIt" rows="2" maxlength="400"></textarea>
+        </label>
+        <label><span data-i18n="descEn">Descrizione (inglese)</span>
+          <textarea id="fDescEn" rows="2" maxlength="400"></textarea>
+        </label>
+      </div>
+      <div class="grid2">
+        <label>Lat <input id="fLat" type="number" step="any" required></label>
+        <label>Lng <input id="fLng" type="number" step="any" required></label>
+      </div>
+      <p id="adminMsg" class="msg" role="status"></p>
+      <button type="submit" data-i18n="addPlace">Aggiungi posto</button>
+    </form>
+
+    <h3 data-i18n="allPlaces">Tutti i posti</h3>
+    <ul id="adminList" class="admin-list"></ul>
+  </dialog>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

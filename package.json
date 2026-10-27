@@ -1,0 +1,9 @@
+{
+  "name": "istanbultips",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mappa bilingue (IT/EN) dei consigli su Istanbul con ricerca per vicinanza e area admin",
+  "dependencies": {
+    "@vercel/blob": "^1.0.0"
+  }
+}
